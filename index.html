@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicPulse Bhilai - Smart Civic Reporting</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Alert Banner (Hidden by default) -->
+    <div id="alert-banner" class="alert-banner hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div class="alert-content">
+            <h4 id="alert-title">High Alert: Water Issue</h4>
+            <span id="alert-message">Repeated water issue detected in Supela (5 reports in 1hr).</span>
+        </div>
+        <button id="close-alert"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- API Error Modal -->
+    <div id="api-error-modal" class="modal hidden" style="background: rgba(0,0,0,0.85);">
+        <div class="modal-content glass-card" style="border-color: #ff4b4b;">
+            <div class="modal-header">
+                <h2 style="color: #ff4b4b;"><i class="fas fa-bug"></i> Map Error</h2>
+            </div>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p>Google Maps could not load. This usually happens because:</p>
+                <ul style="margin-left: 20px; margin-top: 10px; color: #b0b0d0;">
+                    <li>The <strong>API Key</strong> is invalid or copied incorrectly.</li>
+                    <li>The <strong>Maps JavaScript API</strong> is not enabled in Google Console.</li>
+                    <li><strong>Billing</strong> is not enabled on the Google Cloud account.</li>
+                </ul>
+                <p style="margin-top: 15px; font-size: 0.9rem;">Check the browser console (F12) for the specific error
+                    code.</p>
+            </div>
+            <button onclick="location.reload()" class="btn-primary">Reload Page</button>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Controls Overlay -->
+    <div class="ui-overlay">
+        <!-- Header / Stats -->
+        <header class="app-header glass-panel">
+            <div class="logo">
+                <i class="fas fa-heart-pulse"></i>
+                <h1>CivicPulse <span class="highlight">Bhilai</span></h1>
+            </div>
+            <button id="toggle-dashboard" class="btn-secondary">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+        </header>
+
+        <!-- Floating Action Button -->
+        <button id="report-btn" class="fab">
+            <i class="fas fa-plus"></i>
+            <span>Report Issue</span>
+        </button>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="report-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2>📍 Report Issue</h2>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="complaint-form">
+                <div class="form-group">
+                    <label>Issue Type <span class="ai-badge hidden" id="ai-badge"><i class="fas fa-robot"></i>
+                            Auto-Detected</span></label>
+                    <div class="issue-options">
+                        <input type="radio" name="type" id="water" value="Water Supply" checked>
+                        <label for="water" class="issue-card water"><i class="fas fa-faucet"></i> Water</label>
+
+                        <input type="radio" name="type" id="power" value="Power Cut">
+                        <label for="power" class="issue-card power"><i class="fas fa-bolt"></i> Power</label>
+
+                        <input type="radio" name="type" id="drain" value="Drain Overflow">
+                        <label for="drain" class="issue-card drain"><i class="fas fa-water"></i> Drain</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Location (Auto-Detected)</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" id="area-input" placeholder="Detecting location..." required>
+                        <button type="button" id="detect-loc-btn"><i class="fas fa-crosshairs"></i></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="desc-input" rows="3"
+                        placeholder="Describe the issue (e.g., 'No water since morning')..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">Submit Report <i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (Overlay) -->
+    <div id="dashboard-overlay" class="dashboard-panel hidden">
+        <div class="dashboard-content glass-card large">
+            <div class="dashboard-header">
+                <h2>📊 Admin Dashboard</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button id="load-demo-btn" class="btn-secondary" style="font-size: 0.8rem;">Load Demo Data</button>
+                    <button id="close-dashboard"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Reports</h3>
+                    <p class="stat-number" id="total-reports">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Top Issue</h3>
+                    <p class="stat-value" id="top-issue">-</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Hotspot</h3>
+                    <p class="stat-value" id="hotspot-area">-</p>
+                </div>
+            </div>
+
+            <div class="charts-area">
+                <canvas id="complaintsChart"></canvas>
+            </div>
+
+            <div class="recent-list">
+                <h3>Recent Activity</h3>
+                <ul id="activity-feed">
+                    <!-- Live feed items here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Maps API (Note: User needs to insert Key) -->
+    <!-- Ideally, you'd insert the key here. For the code to be actionable, I will use a placeholder or prompt the user. 
+         Using 'defer' to load after parsing. The 'callback=initMap' parameter is standard. -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfen-ZjgXuwip910tTmJJaAQpwl_TLzzQ&callback=initMap&libraries=places,visualization"></script>
+
+    <script>
+        // Global handler for Google Maps Auth Failures
+        window.gm_authFailure = function () {
+            const modal = document.getElementById('api-error-modal');
+            if (modal) modal.classList.remove('hidden');
+            console.error("Google Maps Authentication Failure. Check your API Key and billing status.");
+        };
+    </script>
+    <script src="app.js"></script>
+</body>
+
+</html>
