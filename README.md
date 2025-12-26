@@ -59,7 +59,6 @@ The project is hosted using **Firebase Hosting** and accessible via a secure HTT
 - Admin dashboard for authorities  
 - Heatmap visualization for frequent issues  
 - Mobile application version
-- 
 ## Conclusion
 
 CivicPulse Bhilai demonstrates how web technologies and cloud services can be combined to build a practical, scalable, and impactful civic-tech solution that improves transparency and accountability in urban governance.
